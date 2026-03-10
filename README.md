@@ -18,6 +18,23 @@ After purchase email: **kittickds@icloud.com** with your GitHub username.
 
 ---
 
+## Ratings & Recognition
+
+> **"9.3 / 10 — Production Grade"**
+> *— Google Gemini AI Code Review*
+
+> **"Institutional-grade architecture. This is not a retail trading bot —
+> this is a mini hedge fund engine."**
+> *— AI System Analysis*
+
+| Rating | Source | Score |
+|--------|--------|-------|
+| Production Grade | Google Gemini | 9.3 / 10 |
+| Architecture | AI Code Review | Institutional Grade |
+| AI Pipeline | Multi-model consensus | 4-layer autonomous |
+
+---
+
 ## How to Buy
 
 **Source code delivered to your GitHub account after purchase.**
