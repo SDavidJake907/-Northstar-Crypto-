@@ -223,6 +223,31 @@ One of the most remote communities in the United States.
 
 ---
 
+
+## Third-Party Services & Disclaimers
+
+**NVIDIA**
+NorthStar uses the NVIDIA NIM cloud API for the 49B optimizer model.
+Buyers must obtain their own free API key at build.nvidia.com.
+This product is not affiliated with, endorsed by, or sponsored by
+NVIDIA Corporation. NVIDIA, NIM, and RTX are trademarks of NVIDIA Corporation.
+
+**Kraken / Exchanges**
+NorthStar connects to crypto exchanges via their public APIs.
+Buyers must create their own exchange accounts and API keys.
+This product is not affiliated with or endorsed by Kraken, Coinbase,
+Binance, Bybit, OKX, or any other exchange.
+
+**llama.cpp / Meta**
+NorthStar uses llama.cpp for local AI model inference.
+AI models are downloaded separately by the buyer from HuggingFace.
+Model licenses vary — buyers are responsible for complying with
+the license of each model they download and use.
+
+**Intel**
+NorthStar uses Intel OpenVINO for NPU inference on Intel AI Boost hardware.
+This product is not affiliated with or endorsed by Intel Corporation.
+
 ## License
 
 MIT License. Source code delivered privately to purchasers.
