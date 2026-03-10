@@ -1,6 +1,6 @@
 ## Buy NorthStar Crypto — $49.99
 
-**[CLICK HERE TO PURCHASE — $49.99](https://kittick.gumroad.com/l/zmpiqe)**
+**[CLICK HERE TO PURCHASE — $49.99](https://kittick.gumroad.com/l/northstarcrypto)**
 
 One-time payment. Full source code. GitHub access within 24 hours.
 
