@@ -1,0 +1,4 @@
+export function G({ color = "#06b6d4", children }) { return <span style={{ color, textShadow: `0 0 8px ${color}80` }}>{children}</span>; }
+export function Dot({ color = "#4ade80" }) { return <span style={{ display: "inline-block", width: 8, height: 8, borderRadius: "50%", background: color, boxShadow: `0 0 6px ${color}`, animation: "pulse 2s infinite" }} />; }
+export function Bdg({ color, children }) { return <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 4, background: `${color}20`, color, border: `1px solid ${color}40`, fontFamily: "monospace", textTransform: "uppercase", letterSpacing: 1 }}>{children}</span>; }
+export function PB({ value, color = "#06b6d4", h = 6 }) { return <div style={{ width: "100%", background: "#1a1a2e", borderRadius: 3, height: h, overflow: "hidden" }}><div style={{ width: `${value}%`, height: "100%", background: `linear-gradient(90deg, ${color}, ${color}cc)`, borderRadius: 3, boxShadow: `0 0 8px ${color}40` }} /></div>; }

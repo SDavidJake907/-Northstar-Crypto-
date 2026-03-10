@@ -1,0 +1,75 @@
+[package]
+name = "hybrid_kraken_core"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+anyhow = "1.0"
+log = "0.4"
+env_logger = "0.11"
+dotenvy = "0.15"
+memmap2 = "0.9"
+libloading = "0.8"
+thiserror = "2.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }
+ctrlc = "3.4"
+
+# Async + networking
+tokio = { version = "1.36", features = ["rt-multi-thread", "macros", "net", "time", "sync", "process", "io-util", "signal"] }
+
+# WebSockets
+tokio-tungstenite = { version = "0.24", features = ["native-tls"] }
+futures-util = "0.3"
+
+# High-performance data structures
+smallvec = "1.13"
+indexmap = "2.2"
+ordered-float = "4.2"
+
+# Phase 3: Kraken REST API + crypto auth + AI networking
+reqwest = { version = "0.12", features = ["json", "stream"] }
+hmac = "0.12"
+sha2 = "0.10"
+base64 = "0.22"
+url = "2.5"
+axum = "0.7"
+tower-http = { version = "0.6", features = ["cors"] }
+chrono = { version = "0.4", features = ["clock"] }
+
+# AI inference via Ollama HTTP API (GPU-accelerated, Blackwell-compatible)
+# reqwest already listed above — used for both Kraken API and Ollama
+
+# GPU compute — native CUDA via cudarc (optional, falls back to CPU)
+cudarc = { version = "0.19", features = ["cuda-13010", "cublas", "driver", "nvrtc"], optional = true }
+
+# GBDT (Gradient Boosted Decision Trees) — learns from trade outcomes
+forust-ml = "0.4"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.52", features = ["Win32_Foundation", "Win32_System_LibraryLoader"] }
+
+[lib]
+name = "hybrid_kraken_core"
+path = "src/lib.rs"
+
+[features]
+default = ["nemo_chat", "nemo_optimizer", "gpu_cuda"]
+nemo_chat = []
+nemo_optimizer = []
+gpu_cuda = ["cudarc"]
+openblas-system = []
+openblas-static = []
+intel-mkl-system = []
+
+[[bin]]
+name = "hybrid_kraken_core"
+path = "src/main.rs"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = true

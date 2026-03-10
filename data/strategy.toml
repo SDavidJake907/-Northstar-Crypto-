@@ -1,0 +1,157 @@
+# ═══════════════════════════════════════════════════════════════════
+#  HYBRID-KRAKEN STRATEGY — Single Source of Truth
+#  Hot-reloaded every 10s. Auto-generates data/nemo_prompt.txt.
+#  Edit this file → Rust engine + Nemo AI both update instantly.
+# ═══════════════════════════════════════════════════════════════════
+
+[meta]
+version = 1
+
+# ─── 7D Scoring Weights ─────────────────────────────────────────
+[scoring]
+bias = 0.0
+
+[scoring.weights]
+trend       = 0.25    # was 0.30
+momentum    = 0.18    # was 0.22
+volatility  = 0.08    # was 0.10
+volume      = 0.15    # was 0.20
+mean_revert = 0.08    # was 0.10
+orderflow   = 0.05
+quant       = 0.03
+universe    = 0.05    # echo ratio from CoinGecko universe (0 = disabled)
+whale       = 0.05    # whale detection from L2 book + trade flow
+cross_radar = 0.04    # BTC/ETH leader-follower lag detection
+ml_signal   = 0.04    # journal pattern win-rate lookup
+
+# Normalization ranges for the 7D scoring dimensions
+[scoring.norm]
+trend_score    = [-5.0, 5.0]
+macd_hist      = [-1.0, 1.0]
+rsi            = [20.0, 80.0]
+atr_pct_mult   = 0.05           # atr_hi = price * this
+vol_ratio      = [0.5, 2.0]
+zscore         = [-2.5, 2.5]
+book_imbalance = [-1.0, 1.0]
+buy_ratio      = [0.3, 0.7]
+quant_momo     = [-0.03, 0.03]
+quant_regime   = [-0.01, 0.01]
+
+# ─── 24D MLP Normalization Ranges ──────────────────────────────
+[mlp.norm]
+trend_score       = [-5.0, 5.0]
+macd_hist         = [-1.0, 1.0]
+rsi               = [0.0, 100.0]
+atr_pct           = [0.0, 10.0]
+vol_ratio         = [0.0, 5.0]
+zscore            = [-3.0, 3.0]
+market_state      = [0.0, 1.0]
+book_imbalance    = [-1.0, 1.0]
+buy_ratio         = [0.0, 1.0]
+spread_pct        = [0.0, 2.0]
+buy_slip_pct_100k = [0.0, 5.0]
+quant_momo        = [-0.05, 0.05]
+quant_regime      = [-0.02, 0.02]
+quant_vol         = [0.0, 0.05]
+quant_liquidity   = [0.0, 1.0]
+rsi_p20           = [0.0, 50.0]
+rsi_p80           = [50.0, 100.0]
+trend_strength    = [-5.0, 5.0]
+markov_score      = [-1.0, 1.0]
+markov_prob       = [0.0, 1.0]
+
+# ─── Crash Regime Flag ─────────────────────────────────────────
+[mlp.crash_flag]
+quant_regime_le = -0.005
+quant_vol_ge    = 0.02
+
+# ─── Signal Cascade (first match wins) ─────────────────────────
+[signals.crash]
+quant_regime_le = -0.005
+quant_vol_ge    = 0.02
+confidence      = 0.90
+
+[signals.hunt]
+imb_ge          = 0.35
+buy_ratio_ge    = 0.50
+momo_gt         = 0.0
+confidence      = 0.85
+
+[signals.buy]
+imb_ge          = 0.15
+buy_ratio_ge    = 0.50
+momo_ge         = 0.0
+conf_base       = 0.55
+conf_mult       = 0.45
+conf_cap        = 0.80
+
+[signals.sell]
+imb_le          = -0.20
+momo_lt         = -0.001
+buy_ratio_lt    = 0.45
+conf_base       = 0.50
+conf_mult       = 0.50
+conf_cap        = 0.85
+
+[signals.hold]
+confidence      = 0.60
+
+# ─── Global Hard Filter ───────────────────────────────────────
+[filter.global]
+min_liquidity   = 0.10
+max_spread_pct  = 1.5
+min_vol_ratio   = 0.20
+
+# ─── Lane 1: MOMENTUM ──────────────────────────────────────────
+# Only buy when trend is positive and RSI isn't overbought
+[filter.lane1]
+min_vol_ratio   = 0.30
+max_rsi         = 72.0
+min_trend_score = 1
+
+# ─── Lane 2: COMPRESSION ───────────────────────────────────────
+# Tight range breakout — low vol, narrow bands, book leaning buy
+[filter.lane2]
+max_bb_width    = 3.0
+max_quant_vol   = 0.03
+max_ema50_dist  = 2.0
+max_atr_pct     = 4.0
+min_book_imb    = 0.10
+
+# ─── Lane 3: TREND CONTINUATION ────────────────────────────────
+# Established trend with positive momentum
+[filter.lane3]
+min_rsi         = 35.0
+max_rsi         = 70.0
+max_quant_risk  = 0.02
+min_trend_score = 1
+min_momo        = 0.001
+
+# ─── Markov Regime Filter ──────────────────────────────────────
+[filter.markov]
+min_bull_prob   = 0.45
+min_score       = 0.10
+enabled         = true
+
+# ─── Meme Coin List ────────────────────────────────────────────
+[memes]
+symbols = ["DOGE","SHIB","PEPE","FLOKI","BONK","WIF","HOUSE","GHIBLI","NEIRO","TURBO","BRETT","MOG","FARTCOIN","PUMP","XDG","PENGU","SPX","VIRTUAL","GRIFFAIN","POPCAT","MOODENG","PONKE","SNEK","MEW","GOAT","ZEREBRO","PNUT","GIGA","TOSHI","FWOG"]
+
+# ─── Softmax Portfolio Strategy ───────────────────────────────
+# Computes per-coin allocation weights via softmax over composite scores.
+#
+#   score_i = alpha * momentum + beta * trend + gamma / (vol + eps)
+#   weight_i = exp((score_i - max) / tau) / sum(exp(...))
+#   weights capped at w_max, then renormalized to sum=1
+#   order only fires if |target - prev_weight| > delta
+#
+[strategy]
+type = "softmax"               # strategy type (only "softmax" supported)
+H = 21                         # lookback horizon (bars)
+K = 12                         # top-K coins to rebalance per tick
+w_max = 0.15                   # max weight per coin (pre-renorm)
+delta = 0.01                   # min weight change to trigger an order
+tau = 1.0                      # softmax temperature (lower = more concentrated)
+alpha = 1.0                    # momentum weight in composite score
+beta = 0.5                     # trend weight in composite score
+gamma = 0.2                    # inverse-volatility weight in composite score

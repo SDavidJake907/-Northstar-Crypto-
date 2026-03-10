@@ -1,0 +1,6 @@
+[profile.dev]
+incremental = false      # stops rust-analyzer bloating target/debug
+debug = 0               # no debug symbols in dev builds
+
+[profile.dev.build-override]
+incremental = false
