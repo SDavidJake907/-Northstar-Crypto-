@@ -10,9 +10,9 @@
 ---
 
 ### PRICE SUGGESTIONS
-- **$97** — Source code + setup guide
-- **$197** — Source code + setup guide + 30min support call
-- **$297** — Source code + setup guide + 1hr onboarding call
+- **$49.99** — Source code + setup guide
+- **$49.99** — Source code + setup guide + 30min support call
+- **$49.99** — Source code + setup guide + 1hr onboarding call
 
 ---
 

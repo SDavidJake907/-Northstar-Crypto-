@@ -18,9 +18,9 @@
 ### Pricing
 | Tier | Price | Includes |
 |------|-------|---------|
-| Source | $299.99 | Full source code + all docs |
-| Setup | $1299.99 | Source + 30min setup call |
-| Premium | $2299.99 | Source + 1hr onboarding + 30 days support |
+| Source | $49.99 | Full source code + all docs |
+| Setup | $49.99 | Source + 30min setup call |
+| Premium | $49.99 | Source + 1hr onboarding + 30 days support |
 
 **GitHub:** [@SDavidJake907](https://github.com/SDavidJake907)
 
