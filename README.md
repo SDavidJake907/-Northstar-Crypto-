@@ -179,6 +179,33 @@ No coding required. Follow OPERATOR_RUNBOOK.md.
 
 ---
 
+
+## Screenshots
+
+### Live Dashboard — Real-time AI Team Status & Portfolio
+![Live Dashboard](screenshots/01-live-dashboard.png)
+
+### Live Dashboard — Holdings & Open Positions  
+![Holdings](screenshots/02-live-dashboard-2.png)
+
+### Architecture — 9-Phase AI Pipeline
+![Architecture](screenshots/04-architecture.png)
+
+### Risk Dashboard — Kelly Criterion & Position Sizer
+![Risk](screenshots/06-risk-dashboard.png)
+
+### Schedule — Daily Operations
+![Schedule](screenshots/03-schedule.png)
+
+### Tasks Board
+![Tasks](screenshots/05-tasks.png)
+
+### Onboarding & SOPs
+![Onboarding](screenshots/07-onboarding.png)
+
+### Live Kraken Portfolio
+![Portfolio](screenshots/08-kraken-portfolio.png)
+
 ## About the Builder
 
 **Simeon Kittick**
