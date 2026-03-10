@@ -20,7 +20,7 @@
 
 NorthStar is a real, production-grade AI crypto trading engine
 built from scratch by one developer — Simeon Kittick, a Native
-Yupik from Nuiqsut, Alaska (population ~400, above the Arctic Circle).
+Inupiaq from Nuiqsut, Alaska (population ~400, above the Arctic Circle).
 
 This is NOT a toy. It runs live on Kraken exchange right now.
 
@@ -130,7 +130,7 @@ with real money if configured to do so.
 
 ABOUT THE BUILDER:
 
-Simeon Kittick — Native Yupik from Nuiqsut, Alaska.
+Simeon Kittick — Inupiaq Alaska Native from Nuiqsut, Alaska.
 North Slope Borough. Population ~400. Above the Arctic Circle.
 
 Built NorthStar with no CS degree, no team, no VC funding.
