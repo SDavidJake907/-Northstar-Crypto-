@@ -41,12 +41,10 @@ After purchase email: **kittickds@icloud.com** with your GitHub username.
 ## After Purchase — Get Your Source Code
 
 1. Complete purchase at **[kittick.gumroad.com/l/northstarcrypto](https://kittick.gumroad.com/l/northstarcrypto)**
-2. Email **kittickds@icloud.com** with:
-   - Your GitHub username
-   - Your Gumroad order number
-3. You will receive an invite to the private source repo within 24 hours:
+2. Email **kittickds@icloud.com** with your GitHub username
+3. As soon as your email is received, you will be added to the private repo:
    **github.com/SDavidJake907/-Northstar-crypto-source-**
-4. Accept the invite and clone the repo
+4. Accept the GitHub invite — code is ready to clone immediately
 5. Follow `docs/OPERATOR_RUNBOOK.md` to set up
 6. Run `start_all.bat` — dashboard opens at http://localhost:3000
 
