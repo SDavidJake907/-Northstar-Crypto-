@@ -1,3 +1,13 @@
+## Buy NorthStar Crypto — $49.99
+
+**[CLICK HERE TO PURCHASE — $49.99](https://kittick.gumroad.com/l/zmpiqe)**
+
+One-time payment. Full source code. GitHub access within 24 hours.
+
+After purchase email: **kittickds@icloud.com** with your GitHub username.
+
+---
+
 # NorthStar — AI-Powered Crypto Trading Engine
 ### Built by Simeon Kittick | Nuiqsut, Alaska | GitHub: @SDavidJake907
 
