@@ -1,5 +1,7 @@
 ![NorthStar — AI Crypto Trading Engine](screenshots/northstar-hero.png)
 
+![NorthStar — 9-Phase AI Pipeline](screenshots/northstar-pipeline.png)
+
 ## Buy NorthStar Crypto — $49.99
 
 **[CLICK HERE TO PURCHASE — $49.99](https://kittick.gumroad.com/l/northstarcrypto)**
