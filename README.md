@@ -250,7 +250,10 @@ This product is not affiliated with or endorsed by Intel Corporation.
 
 ## License
 
-MIT License. Source code delivered privately to purchasers.
+NorthStar Commercial Source License — Copyright 2026 Simeon Kittick.
+Single-user license. Personal trading use only. Cannot be resold or redistributed.
+Full license terms in LICENSE file.
+Source code delivered privately to purchasers after payment.
 
 ---
 
