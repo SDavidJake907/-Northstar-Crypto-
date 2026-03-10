@@ -1,0 +1,54 @@
+# API Keys — NEVER commit these
+.env
+.env.local
+.env.*.local
+
+# Keep the example
+!.env.example
+
+# Rust build output (huge — buyer builds from source)
+rust_core/target/
+
+# Large model files
+openvino_models/
+models/
+*.gguf
+*.onnx
+
+# Python environments
+npu-env/
+__pycache__/
+*.pyc
+
+# Node modules
+codezero-team-hub/node_modules/
+
+# Runtime data — private to each user
+logs/
+data/nemo_memory/
+data/positions.json
+data/heartbeat_trader.json
+data/features_snapshot.json
+data/npu_bridge.log
+data/nemo_optimizer.jsonl
+data/gbdt_samples.jsonl
+data/error_flags.jsonl
+data/ai1_decisions.jsonl
+data/ai2_decisions.jsonl
+data/ai3_decisions.jsonl
+npu_journal/
+npu_journal_backup_*/
+
+# Personal session data
+_backup/
+_gemini/
+_tmp/
+.claude/
+
+# Lock file
+data/hybrid_kraken.lock
+logs/panic.log
+
+# OS
+.DS_Store
+Thumbs.db
