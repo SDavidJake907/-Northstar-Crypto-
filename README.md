@@ -1,3 +1,5 @@
+![NorthStar — AI Crypto Trading Engine](screenshots/northstar-hero.png)
+
 ## Buy NorthStar Crypto — $49.99
 
 **[CLICK HERE TO PURCHASE — $49.99](https://kittick.gumroad.com/l/northstarcrypto)**
