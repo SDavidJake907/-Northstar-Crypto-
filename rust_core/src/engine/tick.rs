@@ -1224,17 +1224,34 @@ impl super::TradingLoop {
 
                 // ── AI Override: Math is advisor, AI has final say ──
                 // SELL always blocked. HOLD with strong features → ask AI for override.
+                // Read pump detector signals computed in features.rs
+                let pump_early     = feats.get("pump_early").and_then(|v| v.as_bool()).unwrap_or(false);
+                let pump_confirmed = feats.get("pump_confirmed").and_then(|v| v.as_bool()).unwrap_or(false);
+                let pump_score     = feats.get("pump_score").and_then(|v| v.as_f64()).unwrap_or(0.0);
+
+                let pump_vol = feats.get("vol_ratio").and_then(|v| v.as_f64()).unwrap_or(0.0);
+                let pump_imb = feats.get("book_imbalance").and_then(|v| v.as_f64()).unwrap_or(0.0);
+                let pump_mom = feats.get("momentum_score").and_then(|v| v.as_f64()).unwrap_or(0.0);
+                if pump_confirmed {
+                    tracing::info!("[PUMP-CONFIRMED] {} vol={:.1}x imb={:.2} mom={:.2} — fast-tracking to AI",
+                        sym, pump_vol, pump_imb, pump_mom);
+                } else if pump_early {
+                    tracing::info!("[PUMP-EARLY] {} vol={:.1}x imb={:.2} — early pump signal detected",
+                        sym, pump_vol, pump_imb);
+                }
+
                 let is_nemo_override = ai_decision.action == "HOLD" && {
                     let o_trend = feats.get("trend_score").and_then(|v| v.as_f64()).unwrap_or(0.0) as i32;
                     let o_buy_ratio = feats.get("buy_ratio").and_then(|v| v.as_f64()).unwrap_or(0.5);
                     let o_momentum = feats.get("momentum_score").and_then(|v| v.as_f64()).unwrap_or(0.0);
                     let o_book_imb = feats.get("book_imbalance").and_then(|v| v.as_f64()).unwrap_or(0.0);
                     let o_vol_ratio = feats.get("vol_ratio").and_then(|v| v.as_f64()).unwrap_or(1.0);
+                    // PUMP SIGNALS: always override to AI if pump detected
+                    pump_early || pump_confirmed
                     // Strong features: trend positive + at least one confirming signal
-                    (o_trend >= 2 && (o_momentum > 0.3 || o_buy_ratio > 0.55 || o_book_imb > 0.15))
-                    // Volume spike or strong buy pressure → let AI_1 decide
-                    || o_vol_ratio >= 3.0
-                    || o_book_imb >= 0.25
+                    || (o_trend >= 2 && (o_momentum > 0.3 || o_buy_ratio > 0.55 || o_book_imb > 0.15))
+                    || o_vol_ratio >= 2.0
+                    || o_book_imb >= 0.15
                 };
 
                 // Math action is ADVISORY — AI_1 sees it and makes final call.
@@ -1472,7 +1489,7 @@ impl super::TradingLoop {
                 // Only fires when we have real data (non-zero). Hot movers exempt.
                 let mtf_gate_min = self.config.env.get_f64("MTF_HARD_GATE_7D", -5.0);
                 let e_vol_ratio = feats.get("vol_ratio").and_then(|v| v.as_f64()).unwrap_or(1.0);
-                let is_hot_mover = e_vol_ratio >= 3.0;
+                let is_hot_mover = e_vol_ratio >= 3.0 || pump_confirmed;
                 if e_trend_7d != 0.0 && e_trend_7d < mtf_gate_min && !is_hot_mover {
                     tracing::info!("[MTF-GATE] {} BLOCKED — 7d={:.1}% < {:.1}% threshold | vol={:.1}x",
                         sym, e_trend_7d, mtf_gate_min, e_vol_ratio);
@@ -1498,6 +1515,12 @@ impl super::TradingLoop {
                 }
                 if is_nemo_override {
                     entry_prompt.push_str("|OVR");
+                }
+                // Pump detector labels — AI sees these and knows to act fast
+                if pump_confirmed {
+                    entry_prompt.push_str(&format!("|PUMP_CONFIRMED(score={:.1})", pump_score));
+                } else if pump_early {
+                    entry_prompt.push_str(&format!("|PUMP_EARLY(score={:.1})", pump_score));
                 }
                 if let Some(ref adv) = npu_advisory {
                     entry_prompt.push_str(&format!("|{}", adv));

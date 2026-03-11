@@ -1,4 +1,4 @@
-use std::collections::{HashMap, VecDeque};
+﻿use std::collections::{HashMap, VecDeque};
 
 #[derive(Clone, Debug)]
 pub struct Candle {
@@ -92,7 +92,7 @@ fn clamp01(v: f64) -> f64 {
     v.clamp(0.0, 1.0)
 }
 
-// ── Pure-Math Scoring Engine ────────────────────────────────────
+// â”€â”€ Pure-Math Scoring Engine â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //
 // Converts discrete if/else trading rules into continuous math:
 //   - Logistic gates replace boolean conditions
@@ -120,11 +120,15 @@ pub struct ActionScores {
     pub mean_rev_buy: f64,
     pub mean_rev_sell: f64,
     pub is_l2: bool,
+    /// Pump detector signals (4-factor early pump detection)
+    pub pump_early: bool,      // vol>=1.6x + imb>=0.12 + mom>0.25% + trend_accel>=1
+    pub pump_confirmed: bool,  // vol>=2.0x + imb>=0.18 + mom>0.35% + trend>=3
+    pub pump_score: f64,       // 0.0-1.0 combined pump strength
     /// Dynamic threshold: fluctuates with EMA tunnels + RSI
     /// Strong trend + good RSI = lower threshold (easier entry)
     /// Choppy + extreme RSI = higher threshold (harder entry)
     pub dynamic_threshold: f64,
-    /// Why this decision was made — tracks missing indicators, clamped gates, etc.
+    /// Why this decision was made â€” tracks missing indicators, clamped gates, etc.
     /// Empty = all data present. Non-empty during HOLD = likely broken pipeline, not market uncertainty.
     pub reasons: Vec<String>,
 }
@@ -145,7 +149,7 @@ fn require_indicator(name: &str, v: Option<f64>, reasons: &mut Vec<String>) -> O
         None => {
             reasons.push(format!("missing_{name}"));
             if strict_enabled() {
-                tracing::warn!("[FEATURE-MISSING] {name} missing/invalid — signals degraded");
+                tracing::warn!("[FEATURE-MISSING] {name} missing/invalid â€” signals degraded");
             }
             None
         }
@@ -154,7 +158,7 @@ fn require_indicator(name: &str, v: Option<f64>, reasons: &mut Vec<String>) -> O
 
 /// Logistic gate: g(x; k) = 1 / (1 + e^(-k*x))
 /// Smooth replacement for boolean threshold checks.
-/// k controls sharpness: large k ≈ hard step, small k ≈ soft transition.
+/// k controls sharpness: large k â‰ˆ hard step, small k â‰ˆ soft transition.
 #[inline]
 fn gate(x: f64, k: f64) -> f64 {
     let exp_arg = (-k * x).clamp(-500.0, 500.0); // prevent overflow
@@ -176,7 +180,7 @@ fn softplus(x: f64, t: f64) -> f64 {
     t * (1.0 + arg.exp()).ln()
 }
 
-/// Normalization: maps [lo, hi] → [-1, +1]
+/// Normalization: maps [lo, hi] â†’ [-1, +1]
 #[inline]
 fn norm(x: f64, lo: f64, hi: f64) -> f64 {
     if (hi - lo).abs() < 1e-12 {
@@ -198,12 +202,12 @@ fn compute_weighted_score(f: &Features) -> f64 {
 
     // Regime-aware L1/L3 weights: momentum-dominant for trending markets
     // Momentum drives entries, trend confirms direction, orderflow validates
-    // Volume/volatility demoted — they punish good trending setups unfairly
+    // Volume/volatility demoted â€” they punish good trending setups unfairly
     let score = 0.25 * trend        // direction confirmation
-        + 0.40 * momentum           // PRIMARY driver — MACD + RSI momentum
-        + 0.05 * volatility         // minor — don't penalize trending ATR
-        + 0.05 * volume             // minor — good trends often start on low vol
-        + 0.02 * mean_rev           // near-zero — mean-rev fights trends
+        + 0.40 * momentum           // PRIMARY driver â€” MACD + RSI momentum
+        + 0.05 * volatility         // minor â€” don't penalize trending ATR
+        + 0.05 * volume             // minor â€” good trends often start on low vol
+        + 0.02 * mean_rev           // near-zero â€” mean-rev fights trends
         + 0.20 * orderflow          // orderflow validates (book_imb + buy_ratio)
         + 0.03 * quant;             // quant momentum tiebreaker
 
@@ -213,8 +217,8 @@ fn compute_weighted_score(f: &Features) -> f64 {
 /// Detect L2_COMPRESSION (sideways / range-bound regime).
 ///
 /// Conditions:
-///   - EMAs braided: |EMA9 - EMA21| < ε and |EMA21 - EMA50| < ε (relative to price)
-///   - MACD_hist ≈ 0 (within tolerance)
+///   - EMAs braided: |EMA9 - EMA21| < Îµ and |EMA21 - EMA50| < Îµ (relative to price)
+///   - MACD_hist â‰ˆ 0 (within tolerance)
 ///   - RSI in [40, 60]
 ///   - Low ATR (relative to price)
 ///   - |Zscore| < 1.0 (no extremes)
@@ -222,14 +226,14 @@ fn compute_weighted_score(f: &Features) -> f64 {
 fn detect_l2(f: &Features) -> bool {
     if f.price <= 0.0 { return false; }
 
-    // All 3 EMAs must be present + positive — otherwise can't detect compression
+    // All 3 EMAs must be present + positive â€” otherwise can't detect compression
     let (ema9, ema21, ema50) = match (
         f.ema9.filter(|v| v.is_finite() && *v > 0.0),
         f.ema21.filter(|v| v.is_finite() && *v > 0.0),
         f.ema50.filter(|v| v.is_finite() && *v > 0.0),
     ) {
         (Some(a), Some(b), Some(c)) => (a, b, c),
-        _ => return false, // missing EMAs → can't detect L2
+        _ => return false, // missing EMAs â†’ can't detect L2
     };
 
     // Braided EMAs: all within 1.5% of each other (relative to price)
@@ -273,8 +277,8 @@ fn compute_l2_weighted_score(f: &Features) -> f64 {
         + 0.07 * momentum           // was 0.22
         + 0.10 * volatility         // same
         + 0.10 * volume             // was 0.20
-        + 0.35 * mean_rev           // was 0.10 — now primary driver
-        + 0.25 * orderflow          // was 0.05 — major increase
+        + 0.35 * mean_rev           // was 0.10 â€” now primary driver
+        + 0.25 * orderflow          // was 0.05 â€” major increase
         + 0.05 * quant;             // was 0.03
 
     score.clamp(-1.0, 1.0)
@@ -282,10 +286,10 @@ fn compute_l2_weighted_score(f: &Features) -> f64 {
 
 /// Compute pure-math action scores from features.
 ///
-/// Pipeline: features → gates → signal strengths → action scores → softmax → decision
+/// Pipeline: features â†’ gates â†’ signal strengths â†’ action scores â†’ softmax â†’ decision
 ///
 /// v2: Trend-following + momentum signals added. Dynamic threshold fluctuates
-///     with EMA tunnels and RSI — no fixed stone threshold.
+///     with EMA tunnels and RSI â€” no fixed stone threshold.
 /// v3: L2_COMPRESSION mean-reversion signals for sideways markets.
 ///
 /// No if/else. All continuous functions.
@@ -306,54 +310,99 @@ pub fn compute_action_scores_with_threshold(f: &Features, entry_threshold: f64) 
     // Gate sharpness parameters
     let k = 20.0;  // main signal gates (fairly sharp)
 
-    // Extract required EMAs safely — no more unwrap_or(0.0) fake math
+    // Extract required EMAs safely â€” no more unwrap_or(0.0) fake math
     let ema21_opt = require_indicator("ema21", f.ema21, &mut reasons);
     let ema50_opt = require_indicator("ema50", f.ema50, &mut reasons);
 
-    // ── Crash signal ───────────────────────────────────────────
+    // â”€â”€ Crash signal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // SELL if EMA regime gap <= -0.005 OR realized vol >= 0.02
     // With missing EMAs: regime_gap=0.0 (neutral), crash relies on quant_vol only
     let regime_gap = match (ema21_opt, ema50_opt) {
         (Some(e21), Some(e50)) if f.price > 0.0 => (e21 - e50) / f.price,
-        _ => 0.0, // neutral — don't fake a crash signal from missing data
+        _ => 0.0, // neutral â€” don't fake a crash signal from missing data
     };
     let c1 = gate(-0.005 - regime_gap, k);
     let c2 = gate(f.quant_vol - 0.02, k);
     let crash = soft_or(c1, c2);
 
-    // ── Hunt signal (orderbook-driven buy) ────────────────────
+    // â”€â”€ Hunt signal (orderbook-driven buy) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Book_Imb >= 0.25 AND BuyRatio >= 0.52 AND Momentum > 0
-    // (lowered from 0.50 — catches whale activity earlier)
+    // (lowered from 0.50 â€” catches whale activity earlier)
     let h1 = gate(f.book_imbalance - 0.25, k);
     let h2 = gate(f.buy_ratio - 0.52, k);
     let h3 = gate(f.momentum_score, k);
     let hunt = h1 * h2 * h3;
 
-    // ── Trend-buy signal ──────────────────────────────────────
+    // â”€â”€ Trend-buy signal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Catches rallies even when orderbook is flat:
     //   trend_score >= 3 AND price > EMA21 AND RSI in [40,75] AND momentum > 0.1
-    // If EMA21 missing → trend_buy = 0.0 (disabled, not faked)
-    let trend_norm = (f.trend_score as f64 - 3.0) / 2.0; // 3→0, 5→1
+    // If EMA21 missing â†’ trend_buy = 0.0 (disabled, not faked)
+    let trend_norm = (f.trend_score as f64 - 3.0) / 2.0; // 3â†’0, 5â†’1
     let t1 = gate(trend_norm, k);
     let t2 = match ema21_opt {
         Some(e21) => gate((f.price - e21) / e21 * 100.0, k),
-        None => 0.0, // missing EMA21 → disable trend gate (not fake it)
+        None => 0.0, // missing EMA21 â†’ disable trend gate (not fake it)
     };
     let t3 = gate(f.rsi - 40.0, k) * gate(75.0 - f.rsi, k); // RSI sweet spot [40,75]
     let t4 = gate(f.momentum_score - 0.1, k);
     let trend_buy = t1 * t2 * t3 * t4;
 
-    // ── Momentum-buy signal ───────────────────────────────────
+    // â”€â”€ Momentum-buy signal â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Strong momentum run even without trend confirmation:
-    //   momentum > 0.35 AND buy_ratio > 0.48 AND RSI > 35 AND RSI < 78
+    //   momentum > 0.35 AND buy_ratio > 0.48 AND RSI > 35 AND RSI < 88
+    // RSI cap raised from 78 â†’ 88: pumps happen above RSI 78, must not block them
     let m1 = gate(f.momentum_score - 0.35, k);
     let m2 = gate(f.buy_ratio - 0.48, k);
-    let m3 = gate(f.rsi - 35.0, k) * gate(78.0 - f.rsi, k);
+    let m3 = gate(f.rsi - 35.0, k) * gate(88.0 - f.rsi, k);
     let momentum_buy = m1 * m2 * m3;
 
-    // ── L2 Mean-Reversion BUY (sideways markets) ──────────────
+    // ── 4-Factor Pump Detector ─────────────────────────────
+    // Detects early pumps BEFORE RSI gets overbought.
+    // Uses: micro-momentum + vol spike + book imbalance + trend accel
+    let vol_ratio = f.vol_ratio;
+    let book_imb  = f.book_imbalance;
+    let mom_score = f.momentum_score;
+    let trend_int = f.trend_score as f64;
+    // Trend acceleration proxy: trend_score above baseline (positive and rising)
+    let trend_accel = (trend_int - 1.0).max(0.0);
+
+    let env_f64 = |key: &str, default: f64| -> f64 {
+        std::env::var(key).ok().and_then(|s| s.parse().ok()).unwrap_or(default)
+    };
+
+    let pump_early_vol   = env_f64("PUMP_EARLY_VOL_RATIO", 1.3);
+    let pump_early_imb   = env_f64("PUMP_EARLY_BOOK_IMB", 0.08);
+    let pump_early_mom   = env_f64("PUMP_EARLY_MOM", 0.15);
+    let pump_early_trend = env_f64("PUMP_EARLY_TREND_ACCEL", 0.4);
+    let pump_early_rsi   = env_f64("PUMP_EARLY_RSI_MAX", 92.0);
+
+    let pump_conf_vol   = env_f64("PUMP_CONF_VOL_RATIO", 1.7);
+    let pump_conf_imb   = env_f64("PUMP_CONF_BOOK_IMB", 0.14);
+    let pump_conf_mom   = env_f64("PUMP_CONF_MOM", 0.25);
+    let pump_conf_trend = env_f64("PUMP_CONF_TREND", 1.8);
+    let pump_conf_rsi   = env_f64("PUMP_CONF_RSI_MAX", 92.0);
+
+    // PUMP_EARLY: catches first breath of pump
+    let pump_early = vol_ratio >= pump_early_vol
+        && book_imb  >= pump_early_imb
+        && mom_score >= pump_early_mom
+        && trend_accel >= pump_early_trend
+        && f.rsi < pump_early_rsi;
+
+    // PUMP_CONFIRMED: pump fully underway
+    let pump_confirmed = vol_ratio >= pump_conf_vol
+        && book_imb  >= pump_conf_imb
+        && mom_score >= pump_conf_mom
+        && trend_int >= pump_conf_trend
+        && f.rsi < pump_conf_rsi;
+    // Composite pump score 0.0-1.0
+    let pump_score = if pump_confirmed { 1.0 }
+                     else if pump_early { 0.6 }
+                     else { 0.0 };
+
+    // â”€â”€ L2 Mean-Reversion BUY (sideways markets) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Z < -1.5, RSI < 35, price near BB_lower, book flips bullish, low ATR
-    // If BB missing → mr_buy = 0.0 (disabled, not computed from fake bands)
+    // If BB missing â†’ mr_buy = 0.0 (disabled, not computed from fake bands)
     let mr_buy = if is_l2 {
         match (
             f.bb_lower.filter(|v| v.is_finite() && *v > 0.0),
@@ -375,7 +424,7 @@ pub fn compute_action_scores_with_threshold(f: &Features, entry_threshold: f64) 
         }
     } else { 0.0 };
 
-    // ── L2 Mean-Reversion SELL (sideways markets) ─────────────
+    // â”€â”€ L2 Mean-Reversion SELL (sideways markets) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Z > +1.5, RSI > 65, price near BB_upper, book flips bearish, low ATR
     let mr_sell = if is_l2 {
         match (
@@ -395,36 +444,36 @@ pub fn compute_action_scores_with_threshold(f: &Features, entry_threshold: f64) 
         }
     } else { 0.0 };
 
-    // ── Moderate buy pressure ──────────────────────────────────
+    // â”€â”€ Moderate buy pressure â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Book_Imb >= 0.10 AND BuyRatio >= 0.50 AND Momentum >= 0
     let b1 = gate(f.book_imbalance - 0.10, k);
     let b2 = gate(f.buy_ratio - 0.50, k);
     let b3 = gate(f.momentum_score, k);
     let buy_pressure = b1 * b2 * b3;
 
-    // ── Sell pressure ──────────────────────────────────────────
+    // â”€â”€ Sell pressure â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Book_Imb <= -0.25 OR (Momentum < -0.002 AND BuyRatio < 0.45)
     let s1 = gate(-0.25 - f.book_imbalance, k);
     let s2 = gate(-0.002 - f.momentum_score, k);
     let s3 = gate(0.45 - f.buy_ratio, k);
     let sell_pressure = soft_or(s1, s2 * s3);
 
-    // ── Composite confidence ─────────────────────────────────
+    // â”€â”€ Composite confidence â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // Uses best of: trend strength, momentum, and book imbalance
-    // Capped at 0.90 (was 0.75 — too restrictive)
+    // Capped at 0.90 (was 0.75 â€” too restrictive)
     let conf_trend = (f.trend_score as f64).clamp(0.0, 5.0) / 5.0;
     let conf_momo = f.momentum_score.clamp(0.0, 1.0);
     let conf_book = f.book_imbalance.clamp(0.0, 1.0);
     let conf_buy = (0.45 + 0.20 * conf_trend + 0.15 * conf_momo + 0.15 * conf_book).min(0.90);
     let conf_sell = (0.5 + 0.5 * f.book_imbalance.abs().clamp(0.0, 1.0)).min(0.85);
 
-    // ── Score decomposition (smooth max(x,0) via softplus) ────
+    // â”€â”€ Score decomposition (smooth max(x,0) via softplus) â”€â”€â”€â”€
     let t = 0.1;          // softplus temperature
     let lambda = 0.30;    // weight of SCORE on action scores (was 0.15)
     let pos_score = softplus(score, t);
     let neg_score = softplus(-score, t);
 
-    // ── Action scores: S_buy, S_sell, S_hold ───────────────────
+    // â”€â”€ Action scores: S_buy, S_sell, S_hold â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     // v3: L2 mean-reversion signals contribute in sideways markets,
     //     while trend/momentum signals are damped.
     let l2_damp = if is_l2 { 0.25 } else { 1.0 }; // dampen trend signals in L2
@@ -446,8 +495,8 @@ pub fn compute_action_scores_with_threshold(f: &Features, entry_threshold: f64) 
     // HOLD floor: slightly higher in L2 (require stronger signal for sideways scalps)
     let s_hold = if is_l2 { 0.50 } else { 0.45 } + 0.25 * (1.0 - score.abs().tanh());
 
-    // ── Softmax → probabilities ────────────────────────────────
-    let tau = 0.35; // temperature (was 0.5 — sharper decisions now)
+    // â”€â”€ Softmax â†’ probabilities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    let tau = 0.35; // temperature (was 0.5 â€” sharper decisions now)
     let max_s = s_buy.max(s_sell).max(s_hold);
     let exp_buy  = ((s_buy  - max_s) / tau).exp();
     let exp_sell = ((s_sell - max_s) / tau).exp();
@@ -466,8 +515,8 @@ pub fn compute_action_scores_with_threshold(f: &Features, entry_threshold: f64) 
         ("HOLD", p_hold)
     };
 
-    // ── Dynamic threshold ──────────────────────────────────────
-    // Fluctuates with EMA tunnels + RSI — NOT set in stone.
+    // â”€â”€ Dynamic threshold â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Fluctuates with EMA tunnels + RSI â€” NOT set in stone.
     //
     // Base: 0.58 (from .env ENTRY_THRESHOLD)
     // Strong trend (3+):    -0.08  (easier to enter trending markets)
@@ -507,7 +556,7 @@ pub fn compute_action_scores_with_threshold(f: &Features, entry_threshold: f64) 
     // Log when HOLD is caused by missing data (not market uncertainty)
     if action == "HOLD" && !reasons.is_empty() && strict_enabled() {
         tracing::warn!(
-            "[STRICT] HOLD due to missing data: {:?} — not a market signal",
+            "[STRICT] HOLD due to missing data: {:?} â€” not a market signal",
             reasons,
         );
     }
@@ -527,6 +576,9 @@ pub fn compute_action_scores_with_threshold(f: &Features, entry_threshold: f64) 
         mean_rev_buy: safe_float(mr_buy, 0.0),
         mean_rev_sell: safe_float(mr_sell, 0.0),
         is_l2,
+        pump_early,
+        pump_confirmed,
+        pump_score,
         dynamic_threshold: safe_float(dynamic_threshold, entry_threshold),
         reasons,
     }
@@ -554,7 +606,7 @@ fn ema_opt(prices: &[f64], period: usize) -> Option<f64> {
         return None;
     }
     if prices.len() < period {
-        // SMA fallback — valid approximation, better than None
+        // SMA fallback â€” valid approximation, better than None
         return Some(prices.iter().sum::<f64>() / prices.len() as f64);
     }
     let k = 2.0 / (period as f64 + 1.0);
@@ -797,7 +849,7 @@ fn momentum_metrics(closes: &[f64]) -> (f64, i32, i32, i32, i32) {
 }
 
 /// Hurst Exponent via Rescaled Range (R/S) method.
-/// H > 0.5 = trending (momentum), H < 0.5 = mean-reverting, H ≈ 0.5 = random walk.
+/// H > 0.5 = trending (momentum), H < 0.5 = mean-reverting, H â‰ˆ 0.5 = random walk.
 fn hurst_exponent(closes: &[f64]) -> f64 {
     if closes.len() < 20 {
         return 0.5; // not enough data
@@ -903,7 +955,7 @@ fn shannon_entropy(closes: &[f64]) -> f64 {
         bins[idx.min(n_bins - 1)] += 1;
     }
 
-    // Compute entropy: H = -Σ p_i * log2(p_i)
+    // Compute entropy: H = -Î£ p_i * log2(p_i)
     let total = rets.len() as f64;
     let mut entropy = 0.0;
     for &count in &bins {
@@ -947,7 +999,7 @@ fn autocorr_lag1(closes: &[f64]) -> f64 {
     (cov / (std * std)).clamp(-1.0, 1.0)
 }
 
-/// ADX (Average Directional Index) — trend strength 0-100.
+/// ADX (Average Directional Index) â€” trend strength 0-100.
 /// ADX > 25 = trending, ADX < 20 = choppy/ranging.
 fn compute_adx(highs: &[f64], lows: &[f64], closes: &[f64], period: usize) -> f64 {
     let n = closes.len();
@@ -1001,7 +1053,7 @@ fn compute_adx(highs: &[f64], lows: &[f64], closes: &[f64], period: usize) -> f6
     adx.clamp(0.0, 100.0)
 }
 
-/// Reusable buffers for feature computation — avoids heap allocation per tick.
+/// Reusable buffers for feature computation â€” avoids heap allocation per tick.
 #[derive(Default)]
 pub struct FeatureBuffers {
     pub closes: Vec<f64>,

@@ -1482,6 +1482,10 @@ fn main() -> Result<()> {
                         map.insert("mean_rev_buy".into(), json!(scores.mean_rev_buy));
                         map.insert("mean_rev_sell".into(), json!(scores.mean_rev_sell));
                         map.insert("is_l2".into(), json!(scores.is_l2));
+                        // Pump detector signals
+                        map.insert("pump_early".into(), json!(scores.pump_early));
+                        map.insert("pump_confirmed".into(), json!(scores.pump_confirmed));
+                        map.insert("pump_score".into(), json!(scores.pump_score));
                         map.insert("dynamic_threshold".into(), json!(scores.dynamic_threshold));
                         if !scores.reasons.is_empty() {
                             map.insert("missing_indicators".into(), json!(scores.reasons));

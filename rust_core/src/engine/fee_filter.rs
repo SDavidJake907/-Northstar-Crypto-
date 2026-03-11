@@ -65,10 +65,10 @@ pub fn fee_gate(i: &FeeInputs) -> FeeResult {
 
     // ── 3. Threshold per lane ─────────────────────────────────────────
     let threshold: f64 = match i.lane {
-        Lane::L1 => 0.0080,
-        Lane::L2 => 0.0050,  // lowered from 0.60% — L2 reversion has tighter expected moves
-        Lane::L3 => 0.0070,
-        Lane::L4 => 0.0120,
+        Lane::L1 => 0.0060,  // lowered from 0.80% — trend coins need room
+        Lane::L2 => 0.0040,  // lowered from 0.50%
+        Lane::L3 => 0.0050,  // lowered from 0.70% — was blocking everything at 0.58% net
+        Lane::L4 => 0.0080,  // lowered from 1.20%
     };
 
     // ── 4. Block check ────────────────────────────────────────────────
