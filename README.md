@@ -6,7 +6,7 @@
 
 **[CLICK HERE TO PURCHASE — $49.99](https://kittick.gumroad.com/l/northstarcrypto)**
 
-One-time payment. Full source code. GitHub access sent as soon as your email is received.
+One-time payment. Full source code + free support. GitHub access sent as soon as your email is received.
 
 After purchase email: **kittickds@icloud.com** with your GitHub username.
 
@@ -47,11 +47,9 @@ After purchase email: **kittickds@icloud.com** with your GitHub username.
 4. Run `start_all.bat` — dashboard opens at http://localhost:3000
 
 ### Pricing
-| Tier | Price | Includes |
-|------|-------|---------|
-| Source | $49.99 | Full source code + all docs |
-| Setup | $99.99 | Source + 30min setup call via video |
-| Premium | $149.99 | Source + 1hr onboarding + 30 days support |
+| What You Get | Price |
+|---|---|
+| Full source code + all docs + free support | **$49.99 one-time** |
 
 **GitHub:** [@SDavidJake907](https://github.com/SDavidJake907)
 
