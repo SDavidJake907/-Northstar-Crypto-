@@ -6,7 +6,7 @@
 
 **[CLICK HERE TO PURCHASE — $49.99](https://kittick.gumroad.com/l/northstarcrypto)**
 
-One-time payment. Full source code. GitHub access within 24 hours.
+One-time payment. Full source code. GitHub access sent as soon as your email is received.
 
 After purchase email: **kittickds@icloud.com** with your GitHub username.
 
@@ -41,8 +41,8 @@ After purchase email: **kittickds@icloud.com** with your GitHub username.
 
 **Source code delivered to your GitHub account after purchase.**
 
-1. Go to **gumroad.com/simeonkittick** — choose your tier
-2. Within 24 hours you receive a private GitHub repo invite
+1. Choose your tier below and purchase at **[kittick.gumroad.com/l/northstarcrypto](https://kittick.gumroad.com/l/northstarcrypto)**
+2. Email **kittickds@icloud.com** with your GitHub username — repo invite sent immediately
 3. Follow `docs/OPERATOR_RUNBOOK.md` — full step-by-step setup
 4. Run `start_all.bat` — dashboard opens at http://localhost:3000
 
@@ -50,8 +50,8 @@ After purchase email: **kittickds@icloud.com** with your GitHub username.
 | Tier | Price | Includes |
 |------|-------|---------|
 | Source | $49.99 | Full source code + all docs |
-| Setup | $49.99 | Source + 30min setup call |
-| Premium | $49.99 | Source + 1hr onboarding + 30 days support |
+| Setup | $99.99 | Source + 30min setup call via video |
+| Premium | $149.99 | Source + 1hr onboarding + 30 days support |
 
 **GitHub:** [@SDavidJake907](https://github.com/SDavidJake907)
 
@@ -108,7 +108,7 @@ Architecture supports and roadmap includes:
 The engine itself does not care which exchange you use.
 The exchange layer is modular and swappable.
 
-The system gets smarter every hour through the Nemotron
+The system gets smarter every 30 minutes through the Nemotron
 Super 49B self-optimizer running on NVIDIA NIM cloud.
 
 ---
@@ -118,7 +118,7 @@ Super 49B self-optimizer running on NVIDIA NIM cloud.
 - AI_1: Nemotron 9B — confirms entries using 14 live tools (GPU)
 - AI_2: OpenReasoning 1.5B — exit advisory on all positions (GPU)
 - AI_3: Phi-3 mini — pre-scans candidates in 200ms (Intel NPU)
-- 49B: Nemotron Super — reviews all 3 hourly, rewrites their prompts (NIM cloud)
+- 49B: Nemotron Super — reviews all 3 every 30 min, rewrites their prompts (NIM cloud)
 
 ---
 
@@ -129,7 +129,7 @@ Super 49B self-optimizer running on NVIDIA NIM cloud.
 | Engine | Rust (sub-ms latency) | Python |
 | Exchange | Any (modular) | One hardcoded |
 | AI Models | 4 working together | None |
-| Self-improving | Yes, every hour | No |
+| Self-improving | Yes, every 30 min | No |
 | GPU Math | Custom CUDA kernels | No |
 | NPU Inference | Intel AI Boost | No |
 | Live Trading | Yes, production | Paper only |
