@@ -84,6 +84,32 @@ By purchasing or using this software you accept all risk entirely.
 
 ---
 
+## Who This Is For
+
+> **"Advanced users only — not designed for beginners."**
+> **"Requires intermediate to advanced technical skills."**
+> **"Engineered for developers, quants, and power users."**
+> **"This is not a plug-and-play bot — it's a real engine."**
+> **"For serious builders who want full control."**
+
+---
+
+## Codebase Scale
+
+```
+Rust core bot:     61 files   30,333 lines  ← main trading engine
+Python servers:    29 files    4,152 lines  ← atlas, phi3, npu_bridge, tools
+React UI:           7 files    1,147 lines  ← codezero dashboard
+CUDA / C++:         2 files      725 lines  ← GPU quant kernels + NPU bridge
+─────────────────────────────────────────────────────────────────────────────
+TOTAL:             99 files   36,357 lines
+```
+
+This is a production codebase built by one person, from scratch, above the Arctic Circle.
+Most quant systems this size are built by teams of 5–10 engineers.
+
+---
+
 ## What Is NorthStar?
 
 A real, production-grade AI crypto trading engine. Not a demo.
@@ -107,7 +133,8 @@ The engine itself does not care which exchange you use.
 The exchange layer is modular and swappable.
 
 The system gets smarter every 30 minutes through the Nemotron
-Super 49B self-optimizer running on NVIDIA NIM cloud.
+Ultra 253B self-optimizer running on NVIDIA NIM cloud — the
+largest publicly available Nemotron model.
 
 ---
 
@@ -116,7 +143,7 @@ Super 49B self-optimizer running on NVIDIA NIM cloud.
 - AI_1: Nemotron 9B — confirms entries using 14 live tools (GPU)
 - AI_2: OpenReasoning 1.5B — exit advisory on all positions (GPU)
 - AI_3: Phi-3 mini — pre-scans candidates in 200ms (Intel NPU)
-- 49B: Nemotron Super — reviews all 3 every 30 min, rewrites their prompts (NIM cloud)
+- 253B: Nemotron Ultra 253B — reviews all 3 every 30 min, rewrites their prompts (NIM cloud)
 
 ---
 
@@ -130,6 +157,8 @@ Super 49B self-optimizer running on NVIDIA NIM cloud.
 | Self-improving | Yes, every 30 min | No |
 | GPU Math | Custom CUDA kernels | No |
 | NPU Inference | Intel AI Boost | No |
+| Named Feature Schema | Full JSON per coin | No |
+| Profit Matrix | EV gating + pyramiding | No |
 | Live Trading | Yes, production | Paper only |
 
 ---
