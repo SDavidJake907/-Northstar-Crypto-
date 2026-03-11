@@ -66,17 +66,25 @@ pub struct LaneInputs<'a> {
     pub zscore:             f64,
     pub imbalance:          f64,
     pub spread_pct:         f64,        // already defaulted by caller
+    pub atr_norm:           f64,        // atr/price — used for dynamic spread cap
 }
 
 // â”€â”€ Spread caps per lane (fraction) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-pub fn spread_cap(lane: Lane) -> f64 {
-    match lane {
-        Lane::L1 => 0.0030,
-        Lane::L2 => 0.0020,
-        Lane::L3 => 0.0025,
-        Lane::L4 => 0.0050,
-    }
+/// Dynamic spread cap: base + k * atr_norm
+/// High-ATR coins get more room since their moves are bigger.
+/// Formula from operator config — mirrors real Kraken spread behavior.
+pub fn spread_cap(lane: Lane, atr_norm: f64) -> f64 {
+    let env_f64 = |key: &str, default: f64| -> f64 {
+        std::env::var(key).ok().and_then(|v| v.parse().ok()).unwrap_or(default)
+    };
+    let (base, k) = match lane {
+        Lane::L1 => (env_f64("LANE_SPREAD_CAP_L1", 0.005), 0.25_f64),  // base 0.5%
+        Lane::L2 => (env_f64("LANE_SPREAD_CAP_L2", 0.010), 0.25_f64),  // base 1.0%
+        Lane::L3 => (env_f64("LANE_SPREAD_CAP_L3", 0.020), 0.25_f64),  // base 2.0%
+        Lane::L4 => (env_f64("LANE_SPREAD_CAP_L4", 0.050), 0.50_f64),  // base 5.0%
+    };
+    base + k * atr_norm
 }
 
 // â”€â”€ Main function â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -106,7 +114,7 @@ pub fn assign_lane(i: &LaneInputs) -> LaneResult {
     // â”€â”€ G2: VOLATILE â€” only L4 with vol + momentum gate â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if i.regime == Regime::Volatile {
         if i.vol_ratio >= vol_l4_volatile && i.momentum > mom_l4_volatile {
-            return fee_gate_result(i.symbol, Lane::L4, i.spread_pct);
+            return fee_gate_result(i.symbol, Lane::L4, i.spread_pct, i.atr_norm);
         }
         let reason = if i.vol_ratio < vol_l4_volatile { "volatile_low_vol" } else { "volatile_low_momentum" };
         return block(i.symbol, reason, "LANE-BLOCK");
@@ -125,7 +133,7 @@ pub fn assign_lane(i: &LaneInputs) -> LaneResult {
                 "[BEHAVIORAL-MEME] {} tier={} upgradedâ†’L4 vol={:.1}x",
                 i.symbol, i.tier, i.vol_ratio
             );
-            return fee_gate_result(i.symbol, Lane::L4, i.spread_pct);
+            return fee_gate_result(i.symbol, Lane::L4, i.spread_pct, i.atr_norm);
         }
     }
 
@@ -179,7 +187,7 @@ pub fn assign_lane(i: &LaneInputs) -> LaneResult {
     };
 
     // â”€â”€ G7: Fee gate (spread cap) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    fee_gate_result(i.symbol, lane, i.spread_pct)
+    fee_gate_result(i.symbol, lane, i.spread_pct, i.atr_norm)
 }
 
 // â”€â”€ MTF demotion â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -221,8 +229,8 @@ fn apply_mtf(symbol: &str, lane: Lane, mtf_7d: f64) -> Result<Lane, LaneResult> 
 
 // â”€â”€ Fee gate (spread cap only â€” net-edge handled by fee_filter.rs) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
-fn fee_gate_result(symbol: &str, lane: Lane, spread_pct: f64) -> LaneResult {
-    let cap = spread_cap(lane);
+fn fee_gate_result(symbol: &str, lane: Lane, spread_pct: f64, atr_norm: f64) -> LaneResult {
+    let cap = spread_cap(lane, atr_norm);
     if spread_pct > cap {
         tracing::info!(
             "[LANE-BLOCK] {} fee_gate: spread={:.4}% > cap={:.4}% lane={}",

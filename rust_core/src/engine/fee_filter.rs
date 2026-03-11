@@ -42,7 +42,12 @@ pub fn fee_gate(i: &FeeInputs) -> FeeResult {
             i.atr_norm * ts * 2.0
         }
         Lane::L2 => {
-            i.zscore.abs() * i.atr_norm * 0.80
+            // zscore alone goes to 0 in sideways — add momentum + vol boost so
+            // real setups aren't zeroed out by a flat z-score
+            let zscore_part   = i.zscore.abs() * i.atr_norm * 0.80;
+            let momentum_part = i.momentum.max(0.0) * 0.05;
+            let vol_part      = (i.vol_ratio - 1.0).max(0.0) * i.atr_norm * 0.30;
+            zscore_part + momentum_part + vol_part
         }
         Lane::L3 => {
             (i.atr_norm * 1.5) + (i.momentum.max(0.0) * 0.10)
@@ -64,11 +69,12 @@ pub fn fee_gate(i: &FeeInputs) -> FeeResult {
     let net_edge    = expected_move - total_cost;
 
     // ── 3. Threshold per lane ─────────────────────────────────────────
+    // Minimum net edge required — let AI make final call on marginal setups
     let threshold: f64 = match i.lane {
-        Lane::L1 => 0.0060,  // lowered from 0.80% — trend coins need room
-        Lane::L2 => 0.0040,  // lowered from 0.50%
-        Lane::L3 => 0.0050,  // lowered from 0.70% — was blocking everything at 0.58% net
-        Lane::L4 => 0.0080,  // lowered from 1.20%
+        Lane::L1 => 0.0015,  // 0.15% — strong momentum signal, low bar
+        Lane::L2 => 0.0010,  // 0.10% — compression plays, very low bar
+        Lane::L3 => 0.0015,  // 0.15% — trend rides
+        Lane::L4 => 0.0020,  // 0.20% — hot movers have huge expected moves
     };
 
     // ── 4. Block check ────────────────────────────────────────────────

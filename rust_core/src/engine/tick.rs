@@ -686,6 +686,7 @@ impl super::TradingLoop {
                 zscore:             zscore_pre,
                 imbalance:          imbalance_pre,
                 spread_pct,
+                atr_norm,
             });
 
             // Derive tier string for downstream compat (profile gates, meme caps)
