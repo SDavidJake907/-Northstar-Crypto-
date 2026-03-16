@@ -41,7 +41,7 @@ use self::journal::Journal;
 use self::portfolio_optimizer::ProfitOptimizer;
 use serde_json::json;
 use sha2::{Digest, Sha256};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 use std::time::Instant;
@@ -301,8 +301,9 @@ pub struct TradingLoop {
 
     // Phi-3 NPU scan cache — non-blocking background scan, result cached per coin
     pub(crate) npu_scan_cache: std::collections::HashMap<String, String>,
-    pub(crate) npu_scan_tx: tokio::sync::mpsc::UnboundedSender<(String, String, String, String, String)>,
-    pub(crate) npu_scan_rx: Option<tokio::sync::mpsc::UnboundedReceiver<(String, String, String, String, String)>>,
+    pub(crate) npu_scan_inflight: HashSet<String>,
+    pub(crate) npu_scan_tx: tokio::sync::mpsc::Sender<(String, String, String, String, String)>,
+    pub(crate) npu_scan_rx: Option<tokio::sync::mpsc::Receiver<(String, String, String, String, String)>>,
 
     // GPU Math Sidecar — nvmath-python batch math on port 8084
     pub gpu_math: crate::addons::gpu_math::SharedGpuMath,
@@ -501,7 +502,9 @@ impl TradingLoop {
         let positions = load_positions(&config.positions_file);
         let circuit = CircuitBreakerState::new(0.0); // Will be set on first balance check
         let init_conf_floor = config.env.get_f64("HF_CONF_BASE", 0.60);
-        let (npu_scan_tx, npu_scan_rx) = tokio::sync::mpsc::unbounded_channel::<(String, String, String, String, String)>();
+        let npu_scan_queue_cap = config.env.get_u64("NPU_SCAN_QUEUE_CAP", 256).max(1) as usize;
+        let (npu_scan_tx, npu_scan_rx) =
+            tokio::sync::mpsc::channel::<(String, String, String, String, String)>(npu_scan_queue_cap);
 
         Self {
             config,
@@ -563,6 +566,7 @@ impl TradingLoop {
             memory_enabled: false,
             npu_bridge: npu_arc.clone(),
             npu_scan_cache: std::collections::HashMap::new(),
+            npu_scan_inflight: HashSet::new(),
             npu_scan_tx,
             npu_scan_rx: Some(npu_scan_rx),
             gpu_math: crate::addons::gpu_math::new_shared(),
@@ -611,6 +615,29 @@ impl TradingLoop {
         while mem.len() > NEMO_MEMORY_MAX_PER_COIN {
             mem.pop_front();
         }
+    }
+
+    fn prune_symbol_state(&mut self, features_map: &HashMap<String, serde_json::Value>) {
+        let mut keep: HashSet<String> = features_map.keys().cloned().collect();
+        keep.extend(self.positions.keys().cloned());
+        keep.extend(self.pending_entries.keys().cloned());
+        keep.extend(
+            self.holdings
+                .iter()
+                .filter(|(_, qty)| **qty > 0.0)
+                .map(|(sym, _)| sym.clone()),
+        );
+
+        self.prev_momentum.retain(|sym, _| keep.contains(sym));
+        self.prev_coin_state.retain(|sym, _| keep.contains(sym));
+        self.last_nemo_exit_check.retain(|sym, _| keep.contains(sym));
+        self.last_ai_call_ts.retain(|sym, _| keep.contains(sym));
+        self.last_trade_ts.retain(|sym, _| keep.contains(sym));
+        self.last_entry_price.retain(|sym, _| keep.contains(sym));
+        self.regime_machines.retain(|sym, _| keep.contains(sym));
+        self.book_imb_hist.retain(|sym, _| keep.contains(sym));
+        self.npu_scan_cache.retain(|sym, _| keep.contains(sym));
+        self.npu_scan_inflight.retain(|sym| keep.contains(sym));
     }
 
     /// Reload CVaR portfolio weights from data/cvar_weights.json.

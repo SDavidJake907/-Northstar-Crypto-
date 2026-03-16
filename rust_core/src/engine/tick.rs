@@ -23,6 +23,7 @@ impl super::TradingLoop {
         // Drain Phi-3 background scan results into cache (non-blocking)
         if let Some(ref mut rx) = self.npu_scan_rx {
             while let Ok((sym, verdict, lane, action, reason)) = rx.try_recv() {
+                self.npu_scan_inflight.remove(&sym);
                 let advisory = format!("PHI3:{} lane={} action={} reason={}", verdict, lane, action, reason);
                 // Log AI_3 decision for 49B optimizer
                 crate::engine::decision_log::log_ai3(&crate::engine::decision_log::Ai3Decision {
@@ -36,6 +37,9 @@ impl super::TradingLoop {
                 });
                 self.npu_scan_cache.insert(sym, advisory);
             }
+        }
+        if self.tick_count % 60 == 1 {
+            self.prune_symbol_state(features_map);
         }
         let log_flow = self.config.env.get_bool("LOG_TICK_FLOW", false);
         let log_every = self.config.env.get_u64("LOG_TICK_FLOW_EVERY_N", 10).max(1);
@@ -1438,18 +1442,29 @@ impl super::TradingLoop {
                 let npu_advisory: Option<String> = if npu_verify_enabled {
                     // Check cache from previous scan (stored in npu_scan_cache on TradingLoop)
                     let cached = self.npu_scan_cache.get(sym).cloned();
-                    // Spawn a fresh scan in the background — result will be in cache next tick
-                    let feats_clone = feats.clone();
-                    let sym_owned = sym.to_string();
-                    let cache_tx = self.npu_scan_tx.clone();
-                    tokio::spawn(async move {
-                        let scan = crate::ai_bridge::npu_scan_coin(&feats_clone).await;
-                        tracing::debug!(
-                            "[NPU-SCAN] {} verdict={} lane={} action={} | {} ({}ms)",
-                            sym_owned, scan.verdict, scan.lane, scan.recomputed_action, scan.explanation, scan.latency_ms
-                        );
-                        let _ = cache_tx.send((sym_owned, scan.verdict, scan.lane, scan.recomputed_action, scan.explanation));
-                    });
+                    // Spawn at most one background scan per symbol. This prevents unbounded
+                    // task/queue buildup when scans are slower than the tick loop.
+                    if self.npu_scan_inflight.insert(sym.to_string()) {
+                        let feats_clone = feats.clone();
+                        let sym_owned = sym.to_string();
+                        let cache_tx = self.npu_scan_tx.clone();
+                        tokio::spawn(async move {
+                            let scan = crate::ai_bridge::npu_scan_coin(&feats_clone).await;
+                            tracing::debug!(
+                                "[NPU-SCAN] {} verdict={} lane={} action={} | {} ({}ms)",
+                                sym_owned, scan.verdict, scan.lane, scan.recomputed_action, scan.explanation, scan.latency_ms
+                            );
+                            let _ = cache_tx
+                                .send((
+                                    sym_owned,
+                                    scan.verdict,
+                                    scan.lane,
+                                    scan.recomputed_action,
+                                    scan.explanation,
+                                ))
+                                .await;
+                        });
+                    }
                     cached
                 } else {
                     None
