@@ -24,6 +24,8 @@ Inupiaq from Nuiqsut, Alaska (population ~400, above the Arctic Circle).
 
 This is NOT a toy. It runs live on Kraken exchange right now.
 
+50% of the proceeds will go to the Kuukpik Presbyterian Church food bank in the City of Nuiqsut.
+
 ---
 
 WHAT YOU GET:

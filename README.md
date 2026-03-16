@@ -8,6 +8,8 @@
 
 One-time payment. Full source code + free support. GitHub access sent as soon as your email is received.
 
+**50% of the proceeds will go to the Kuukpik Presbyterian Church food bank in the City of Nuiqsut.**
+
 After purchase email: **kittickds@icloud.com** with your GitHub username.
 
 ---
@@ -50,6 +52,8 @@ After purchase email: **kittickds@icloud.com** with your GitHub username.
 | What You Get | Price |
 |---|---|
 | Full source code + all docs + free support | **$49.99 one-time** |
+
+**Donation commitment:** 50% of the proceeds will go to the Kuukpik Presbyterian Church food bank in the City of Nuiqsut.
 
 **GitHub:** [@SDavidJake907](https://github.com/SDavidJake907)
 
